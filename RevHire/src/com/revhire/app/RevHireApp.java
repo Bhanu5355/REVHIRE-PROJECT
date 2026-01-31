@@ -72,6 +72,15 @@ public class RevHireApp {
             	    System.out.print("Password: ");
             	    String pass = sc.nextLine();
 
+            	    if (!isValidPassword(pass)) {
+            	        System.out.println(
+            	            "⚠️ Password must contain at least 8 characters " +
+            	            "(one letter, one number, one special character)"
+            	        );
+            	        continue;
+            	    }
+
+
             	    if (pass == null || pass.trim().isEmpty()) {
             	        System.out.println("⚠️ Password cannot be empty");
             	        continue;
@@ -144,6 +153,14 @@ public class RevHireApp {
 
                         System.out.print("New Password: ");
                         String newPass = sc.nextLine();
+
+                        if (!isValidPassword(newPass)) {
+                            System.out.println(
+                                "⚠️ Password must contain at least 8 characters " +
+                                "(one letter, one number, one special character)"
+                            );
+                            continue;
+                        }
 
                         boolean updated =
                             userService.resetPassword(email, ans, newPass);
@@ -482,5 +499,33 @@ public class RevHireApp {
             }
         }
     }
+    
+    private static boolean isValidPassword(String password) {
+
+        if (password == null) {
+            return false;
+        }
+
+        if (password.length() < 8) {
+            return false;
+        }
+
+        boolean hasLetter = false;
+        boolean hasDigit = false;
+        boolean hasSpecial = false;
+
+        for (char ch : password.toCharArray()) {
+            if (Character.isLetter(ch)) {
+                hasLetter = true;
+            } else if (Character.isDigit(ch)) {
+                hasDigit = true;
+            } else {
+                hasSpecial = true; // anything not letter/digit
+            }
+        }
+
+        return hasLetter && hasDigit && hasSpecial;
+    }
+
 
 }

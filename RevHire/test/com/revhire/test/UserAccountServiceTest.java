@@ -46,7 +46,7 @@ public class UserAccountServiceTest {
     public void login_jobSeeker_shouldPass() throws Exception {
 
         UserAccount user =
-            service.login("bhukyabhanu1234@gmail.com", "bhanu5355");
+            service.login("bhukyabhanu1234@gmail.com", "bhanu@5355");
 
         assertNotNull(user);
         assertEquals(2, user.getUserId());
@@ -58,7 +58,7 @@ public class UserAccountServiceTest {
     public void login_employer_shouldPass() throws Exception {
 
         UserAccount user =
-            service.login("bhukya1234@gmail.com", "bhanu6658");
+            service.login("bhukya1234@gmail.com", "bhanu@6658");
 
         assertNotNull(user);
         assertEquals(3, user.getUserId());
