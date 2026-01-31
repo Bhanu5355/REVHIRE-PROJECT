@@ -17,7 +17,7 @@ public class ResumeService {
     public boolean createResume(int seekerId, String fullName, String obj,
                                 String edu, String exp, String skills, String proj) {
 
-        logger.info("Creating/updating resume for seekerId=" + seekerId);
+        logger.info("Create/Update resume for seekerId=" + seekerId);
 
         Resume r = new Resume();
         r.setSeekerId(seekerId);
@@ -29,10 +29,7 @@ public class ResumeService {
         r.setProjectsText(proj);
         r.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
 
-        boolean result = dao.saveOrUpdateResume(r);
-        logger.info("Resume save/update result: " + result);
-
-        return result;
+        return dao.saveOrUpdateResume(r);
     }
 
     public Resume viewResume(int seekerId) {

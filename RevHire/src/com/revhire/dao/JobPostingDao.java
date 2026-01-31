@@ -126,4 +126,32 @@ public class JobPostingDao {
         }
         return list;
     }
+ // ================= CHECK JOB EXISTS & OPEN =================
+    public boolean jobExistsAndOpen(int jobId) {
+
+        String sql =
+            "SELECT 1 FROM job_posting WHERE job_id = ? AND status = 'OPEN'";
+
+        try {
+            Connection con = DBConnection.getConnection();
+            PreparedStatement ps = con.prepareStatement(sql);
+
+            ps.setInt(1, jobId);
+            ResultSet rs = ps.executeQuery();
+
+            boolean exists = rs.next();
+
+            rs.close();
+            ps.close();
+            con.close();
+
+            return exists;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
 }

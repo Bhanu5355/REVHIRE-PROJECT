@@ -33,50 +33,101 @@ public class RevHireApp {
         	System.out.println("4. Exit");
         	System.out.print("Choose option: ");
 
+            String input = sc.nextLine();
 
-            int choice = sc.nextInt();
-            sc.nextLine();
+        	int choice;
 
             try {
-                if (choice == 1) {
-                    System.out.print("Role (JOB_SEEKER / EMPLOYER): ");
-                    String role = sc.nextLine();
+                choice = Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("⚠️ Please enter a valid number (1-4)");
+                continue;
+            }
 
-                    System.out.print("Name: ");
-                    String name = sc.nextLine();
+            try {
+            	if (choice == 1) {
 
-                    System.out.print("Email: ");
-                    String email = sc.nextLine();
+            	    System.out.print("Role (JOB_SEEKER / EMPLOYER): ");
+            	    String role = sc.nextLine();
 
-                    System.out.print("Password: ");
-                    String pass = sc.nextLine();
+            	    System.out.print("Name: ");
+            	    String name = sc.nextLine();
 
-                    System.out.print("Security Question: ");
-                    String q = sc.nextLine();
+            	    System.out.print("Email: ");
+            	    String email = sc.nextLine();
 
-                    System.out.print("Security Answer: ");
-                    String a = sc.nextLine();
+            	    // 🔐 Email validation at console level
+            	    if (email == null || email.trim().isEmpty()) {
+            	        System.out.println("⚠️ Email cannot be empty");
+            	        continue;
+            	    }
 
-                    userService.register(role, name, email, pass, q, a);
-                    System.out.println("Registration successful");
-                }
+            	    email = email.trim();
 
+            	    if (!email.contains("@") || !email.contains(".")) {
+            	        System.out.println("⚠️ Invalid email format. Example: user@gmail.com");
+            	        continue;
+            	    }
+
+            	    System.out.print("Password: ");
+            	    String pass = sc.nextLine();
+
+            	    if (pass == null || pass.trim().isEmpty()) {
+            	        System.out.println("⚠️ Password cannot be empty");
+            	        continue;
+            	    }
+
+            	    System.out.print("Security Question: ");
+            	    String q = sc.nextLine();
+
+            	    System.out.print("Security Answer: ");
+            	    String a = sc.nextLine();
+
+            	    try {
+            	        userService.register(role, name, email, pass, q, a);
+            	        System.out.println("Registration successful");
+            	    } catch (ValidationException ve) {
+            	        System.out.println("⚠️ " + ve.getMessage());
+            	    }
+            	}
+
+                
                 else if (choice == 2) {
+
                     System.out.print("Email: ");
                     String email = sc.nextLine();
+
+                    // 🔐 Email validation at console level (UX improvement)
+                    if (email == null || email.trim().isEmpty()) {
+                        System.out.println("⚠️ Email cannot be empty");
+                        continue;
+                    }
+
+                    email = email.trim();
+
+                    if (!email.contains("@") || !email.contains(".")) {
+                        System.out.println("⚠️ Invalid email format. Example: user@gmail.com");
+                        continue;
+                    }
 
                     System.out.print("Password: ");
                     String pass = sc.nextLine();
 
-                    UserAccount user = userService.login(email, pass);
-                    System.out.println("Welcome " + user.getName());
+                    try {
+                        UserAccount user = userService.login(email, pass);
+                        System.out.println("Welcome " + user.getName());
 
-                    if ("JOB_SEEKER".equalsIgnoreCase(user.getRole())) {
-                        jobSeekerMenu(sc, user.getUserId());
-                    } else {
-                        employerMenu(sc);
+                        if ("JOB_SEEKER".equalsIgnoreCase(user.getRole())) {
+                            jobSeekerMenu(sc, user.getUserId());
+                        } else {
+                            employerMenu(sc);
+                        }
+
+                    } catch (InvalidCredentialsException ice) {
+                        System.out.println("⚠️ Invalid email or password");
                     }
                 }
+
                 else if (choice == 3) {
 
                     System.out.print("Enter registered email: ");
@@ -142,9 +193,16 @@ public class RevHireApp {
             
             System.out.println("8. Logout");
             System.out.print("Choose option: ");
+            String input = sc.nextLine();
 
-            int option = sc.nextInt();
-            sc.nextLine();
+            int option;
+            try {
+                option = Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("⚠️ Please enter a valid number (1-8)");
+                continue;
+            }
+
 
             // 1. CREATE RESUME
             if (option == 1) {
@@ -198,18 +256,23 @@ public class RevHireApp {
 
             // 3. VIEW ALL JOBS
             else if (option == 3) {
-                List<JobPosting> jobs = jobService.viewOpenJobs();
+            	List<JobPosting> jobs = jobService.viewOpenJobs();
 
-                System.out.println("\n--- Available Jobs ---");
-                for (JobPosting j : jobs) {
-                    System.out.println(
-                            j.getJobId() + " | " +
-                            j.getTitle() + " | " +
-                            j.getLocation() + " | " +
-                            j.getJobType() + " | " +
-                            j.getSalaryMin() + "-" + j.getSalaryMax() +
-                            " | Deadline: " + j.getDeadline());
-                }
+            	if (jobs.isEmpty()) {
+            	    System.out.println("❌ No jobs available at the moment");
+            	} else {
+            	    System.out.println("\n--- Available Jobs ---");
+            	    for (JobPosting j : jobs) {
+            	        System.out.println(
+            	            j.getJobId() + " | " +
+            	            j.getTitle() + " | " +
+            	            j.getLocation() + " | " +
+            	            j.getJobType() + " | " +
+            	            j.getSalaryMin() + "-" + j.getSalaryMax() +
+            	            " | Deadline: " + j.getDeadline());
+            	    }
+            	}
+
             }
 
             // 4. SEARCH JOBS
@@ -222,13 +285,17 @@ public class RevHireApp {
 
                 List<JobPosting> jobs = jobService.searchJobs(loc, type);
 
-                System.out.println("\n--- Search Results ---");
-                for (JobPosting j : jobs) {
-                    System.out.println(
-                            j.getJobId() + " | " +
-                            j.getTitle() + " | " +
-                            j.getLocation() + " | " +
-                            j.getJobType());
+                if (jobs.isEmpty()) {
+                    System.out.println("❌ No jobs found for given location and job type");
+                } else {
+                    System.out.println("\n--- Search Results ---");
+                    for (JobPosting j : jobs) {
+                        System.out.println(
+                                j.getJobId() + " | " +
+                                j.getTitle() + " | " +
+                                j.getLocation() + " | " +
+                                j.getJobType());
+                    }
                 }
             }
 
@@ -242,12 +309,15 @@ public class RevHireApp {
                 String cover = sc.nextLine();
 
                 try {
-					appService.apply(jobId, seekerId, 0, cover);
-				} catch (ValidationException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-                System.out.println("✅ Applied successfully");
+                    boolean applied = appService.apply(jobId, seekerId, 0, cover);
+                    if (applied) {
+                        System.out.println("✅ Applied successfully");
+                    } else {
+                        System.out.println("❌ Failed to apply for job");
+                    }
+                } catch (ValidationException e) {
+                    System.out.println("⚠️ " + e.getMessage());
+                }
             }
 
             // 6. VIEW APPLICATIONS
@@ -266,18 +336,24 @@ public class RevHireApp {
             }
          // ---------- WITHDRAW APPLICATION ----------
             else if (option == 7) {
+
                 System.out.print("Enter Application ID to withdraw: ");
-                int appId = sc.nextInt();
-                sc.nextLine();
+                int appId = Integer.parseInt(sc.nextLine());
 
-                boolean ok = appService.withdraw(appId);
+                try {
+                    boolean ok = appService.withdraw(appId);
 
-                if (ok) {
-                    System.out.println("Application withdrawn successfully");
-                } else {
-                    System.out.println("Unable to withdraw application");
+                    if (ok) {
+                        System.out.println("Application withdrawn successfully");
+                    } else {
+                        System.out.println("❌ Application not found");
+                    }
+
+                } catch (ValidationException ve) {
+                    System.out.println("⚠️ " + ve.getMessage());
                 }
             }
+
 
             // ---------- LOGOUT ----------
             else if (option == 8) {
@@ -306,11 +382,19 @@ public class RevHireApp {
             System.out.println("1. View Applicants for Job");
             System.out.println("2. Shortlist Applicant");
             System.out.println("3. Reject Applicant");
-            System.out.println("4. Logout");
+            System.out.println("4. Reopen");
+            System.out.println("5. Logout");
             System.out.print("Choose option: ");
+            String input = sc.nextLine();
 
-            int option = sc.nextInt();
-            sc.nextLine();
+            int option;
+            try {
+                option = Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("⚠️ Please enter a valid number (1-8)");
+                continue;
+            }
+
 
             if (option == 1) {
                 System.out.print("Enter Job ID: ");
@@ -320,35 +404,75 @@ public class RevHireApp {
                 List<Application> list =
                         appService.viewApplicantsByJob(jobId);
 
-                System.out.println("\n--- Applicants ---");
-                for (Application a : list) {
-                    System.out.println(
+                if (list.isEmpty()) {
+                    System.out.println("❌ No applicants found for this job");
+                } else {
+                    System.out.println("\n--- Applicants ---");
+                    for (Application a : list) {
+                        System.out.println(
                             "ApplicationId: " + a.getApplicationId() +
                             ", SeekerId: " + a.getSeekerId() +
                             ", Status: " + a.getStatus()
-                    );
+                        );
+                    }
                 }
             }
 
+
             else if (option == 2) {
                 System.out.print("Enter Application ID to shortlist: ");
-                int appId = sc.nextInt();
-                sc.nextLine();
+                int appId = Integer.parseInt(sc.nextLine());
 
-                appService.shortlist(appId);
-                System.out.println("Applicant shortlisted");
+                try {
+                    boolean ok = appService.shortlist(appId);
+
+                    if (ok) {
+                        System.out.println("Applicant shortlisted");
+                    } else {
+                        System.out.println("❌ Application not found");
+                    }
+
+                } catch (ValidationException ve) {
+                    System.out.println("⚠️ " + ve.getMessage());
+                }
             }
+
 
             else if (option == 3) {
                 System.out.print("Enter Application ID to reject: ");
-                int appId = sc.nextInt();
-                sc.nextLine();
+                int appId = Integer.parseInt(sc.nextLine());
 
-                appService.reject(appId);
-                System.out.println("Applicant rejected");
+                try {
+                    boolean ok = appService.reject(appId);
+
+                    if (ok) {
+                        System.out.println("Applicant rejected");
+                    } else {
+                        System.out.println("❌ Application not found");
+                    }
+
+                } catch (ValidationException ve) {
+                    System.out.println("⚠️ " + ve.getMessage());
+                }
+            }
+            else if (option == 4) {
+                System.out.print("Enter Application ID to reopen: ");
+                int appId = Integer.parseInt(sc.nextLine());
+
+                try {
+                    boolean ok = appService.reopen(appId);
+                    if (ok) {
+                        System.out.println("✅ Application reopened successfully");
+                    } else {
+                        System.out.println("❌ Application not found");
+                    }
+                } catch (ValidationException ve) {
+                    System.out.println("⚠️ " + ve.getMessage());
+                }
             }
 
-            else if (option == 4) {
+
+            else if (option == 5) {
                 System.out.println("Logged out successfully");
                 break;
             }

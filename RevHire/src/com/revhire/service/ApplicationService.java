@@ -8,6 +8,8 @@ import org.apache.log4j.Logger;
 import com.revhire.dao.ApplicationDao;
 import com.revhire.entity.Application;
 import com.revhire.exception.ValidationException;
+import com.revhire.dao.JobPostingDao;
+
 
 public class ApplicationService {
 
@@ -22,10 +24,20 @@ public class ApplicationService {
 
         logger.info("Apply job requested | jobId=" + jobId + ", seekerId=" + seekerId);
 
-        if (jobId <= 0 || seekerId <= 0) {
-            logger.error("Invalid job or seeker");
-            throw new ValidationException("Invalid job or seeker");
+        if (jobId <= 0)
+            throw new ValidationException("Invalid job ID");
+
+        if (seekerId <= 0)
+            throw new ValidationException("Invalid seeker ID");
+        
+        // ✅ NEW VALIDATION: check job exists
+        JobPostingDao jobDao = new JobPostingDao();
+        if (!jobDao.jobExistsAndOpen(jobId)) {
+            logger.error("Invalid or closed job | jobId=" + jobId);
+            throw new ValidationException(
+                "Invalid Job ID or Job is not open for applications");
         }
+
 
         Application app = new Application();
         app.setJobId(jobId);
@@ -36,9 +48,15 @@ public class ApplicationService {
         app.setAppliedAt(new Timestamp(System.currentTimeMillis()));
 
         boolean result = dao.applyJob(app);
-        logger.info("Apply job result: " + result);
 
-        return result;
+        if (!result) {
+            logger.error("Apply failed | Invalid or closed jobId=" + jobId);
+            throw new ValidationException(
+                "Invalid Job ID or job is not open for applications");
+        }
+
+        return true;
+
     }
 
     // ================= JOB SEEKER =================
@@ -53,19 +71,111 @@ public class ApplicationService {
         return dao.getApplicationsByJob(jobId);
     }
 
-    public boolean shortlist(int applicationId) {
+    public boolean shortlist(int applicationId) throws ValidationException {
+
         logger.info("Shortlisting applicationId=" + applicationId);
+
+        String status = dao.getApplicationStatus(applicationId);
+
+        if (status == null) {
+            return false;
+        }
+
+        if ("REJECTED".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application is rejected. Reopen first.");
+        }
+
+        if ("WITHDRAWN".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application is withdrawn. Reopen first.");
+        }
+
+        if ("SHORTLISTED".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application already shortlisted");
+        }
+
+        // APPLIED or REOPENED allowed
         return dao.updateStatus(applicationId, "SHORTLISTED");
     }
 
-    public boolean reject(int applicationId) {
+
+
+    public boolean reject(int applicationId) throws ValidationException {
+
         logger.info("Rejecting applicationId=" + applicationId);
+
+        String currentStatus = dao.getApplicationStatus(applicationId);
+
+        if (currentStatus == null) {
+            return false;
+        }
+
+        if ("REJECTED".equalsIgnoreCase(currentStatus)) {
+            throw new ValidationException("Application already rejected");
+        }
+
+        if ("WITHDRAWN".equalsIgnoreCase(currentStatus)) {
+            throw new ValidationException("Application already withdrawn");
+        }
+
         return dao.updateStatus(applicationId, "REJECTED");
     }
 
-    // ================= WITHDRAW =================
-    public boolean withdraw(int applicationId) {
+    
+    public boolean reopen(int applicationId) throws ValidationException {
+
+        logger.info("Reopening applicationId=" + applicationId);
+
+        String status = dao.getApplicationStatus(applicationId);
+
+        if (status == null) {
+            return false; // application not found
+        }
+
+        if ("REOPENED".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application already reopened");
+        }
+
+        if ("APPLIED".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application already active");
+        }
+
+        if ("SHORTLISTED".equalsIgnoreCase(status)) {
+            throw new ValidationException("Application already shortlisted");
+        }
+
+        // ONLY allowed cases reach here
+        // REJECTED or WITHDRAWN
+        return dao.reopenApplication(applicationId);
+    }
+
+
+
+
+
+
+    public boolean withdraw(int applicationId) throws ValidationException {
+
         logger.info("Withdrawing applicationId=" + applicationId);
+
+        String currentStatus = dao.getApplicationStatus(applicationId);
+
+        if (currentStatus == null) {
+            return false; // application not found
+        }
+
+        if ("WITHDRAWN".equalsIgnoreCase(currentStatus)) {
+            throw new ValidationException("Application already withdrawn");
+        }
+
+        if ("REJECTED".equalsIgnoreCase(currentStatus)) {
+            throw new ValidationException("Application already rejected");
+        }
+
+        if ("SHORTLISTED".equalsIgnoreCase(currentStatus)) {
+            throw new ValidationException("Application already shortlisted");
+        }
+
         return dao.withdrawApplication(applicationId);
     }
+
 }

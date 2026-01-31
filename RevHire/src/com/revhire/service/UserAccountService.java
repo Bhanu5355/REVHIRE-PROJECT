@@ -16,26 +16,35 @@ public class UserAccountService {
 
     private UserAccountDao dao = new UserAccountDao();
 
+    // ================= EMAIL VALIDATION =================
+    private boolean isValidEmail(String email) {
+        return email != null
+            && email.contains("@")
+            && email.contains(".")
+            && email.indexOf("@") < email.lastIndexOf(".");
+    }
+
+    // ================= REGISTER =================
     public void register(String role, String name, String email,
                          String pass, String q, String a)
             throws ValidationException, Exception {
 
-        logger.info("Register request for email=" + email);
+        logger.info("Register request | email=" + email);
 
-        if (email == null || email.trim().isEmpty()) {
-            logger.error("Email empty");
+        if (email == null || email.trim().isEmpty())
             throw new ValidationException("Email cannot be empty");
-        }
 
-        if (pass == null || pass.trim().isEmpty()) {
-            logger.error("Password empty");
+        // ✅ EMAIL FORMAT VALIDATION (FIX)
+        email = email.trim();
+        if (!isValidEmail(email))
+            throw new ValidationException(
+                "Invalid email format. Example: user@gmail.com");
+
+        if (pass == null || pass.trim().isEmpty())
             throw new ValidationException("Password cannot be empty");
-        }
 
-        if (dao.emailExists(email)) {
-            logger.warn("Email already exists: " + email);
+        if (dao.emailExists(email))
             throw new ValidationException("Email already registered");
-        }
 
         UserAccount u = new UserAccount();
         u.setRole(role.toUpperCase());
@@ -47,50 +56,48 @@ public class UserAccountService {
         u.setCreatedAt(new Timestamp(System.currentTimeMillis()));
 
         dao.register(u);
-        logger.info("Registration successful for email=" + email);
+        logger.info("Registration successful | email=" + email);
     }
 
+    // ================= LOGIN =================
     public UserAccount login(String email, String pass)
             throws InvalidCredentialsException, Exception {
 
-        logger.info("Login attempt for email=" + email);
+        logger.info("Login attempt | email=" + email);
 
         UserAccount u = dao.login(email, pass);
 
-        if (u == null) {
-            logger.warn("Invalid login for email=" + email);
+        if (u == null)
             throw new InvalidCredentialsException("Invalid credentials");
-        }
 
-        logger.info("Login successful for email=" + email);
+        logger.info("Login success | userId=" + u.getUserId());
         return u;
     }
 
+    // ================= FORGOT PASSWORD =================
     public String forgotPasswordGetQuestion(String email) throws Exception {
 
-        logger.info("Forgot password requested for email=" + email);
+        logger.info("Forgot password | email=" + email);
 
         String question = dao.getSecurityQuestion(email);
-        if (question == null) {
-            logger.error("Email not registered: " + email);
+        if (question == null)
             throw new ValidationException("Email not registered");
-        }
+
         return question;
     }
 
     public boolean resetPassword(String email, String answer, String newPassword)
             throws Exception {
 
-        logger.info("Reset password attempt for email=" + email);
+        if (newPassword == null || newPassword.trim().isEmpty())
+            throw new ValidationException("Password cannot be empty");
 
         boolean valid = dao.validateSecurityAnswer(email, answer);
-        if (!valid) {
-            logger.error("Incorrect security answer for email=" + email);
+        if (!valid)
             throw new ValidationException("Incorrect security answer");
-        }
 
         boolean result = dao.updatePassword(email, newPassword);
-        logger.info("Password reset result: " + result);
+        logger.info("Password reset result=" + result);
 
         return result;
     }

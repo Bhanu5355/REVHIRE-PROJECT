@@ -22,17 +22,16 @@ public class JobPostingService {
                            double minSalary, double maxSalary,
                            Date deadline) throws ValidationException {
 
-        logger.info("Post job requested by employerId=" + employerId);
+        logger.info("Post job request by employerId=" + employerId);
 
-        if (title == null || title.trim().isEmpty()) {
-            logger.error("Job title empty");
+        if (title == null || title.trim().isEmpty())
             throw new ValidationException("Job title cannot be empty");
-        }
 
-        if (minSalary > maxSalary) {
-            logger.error("Invalid salary range");
-            throw new ValidationException("Min salary cannot be greater than max salary");
-        }
+        if (location == null || location.trim().isEmpty())
+            throw new ValidationException("Location cannot be empty");
+
+        if (minSalary > maxSalary)
+            throw new ValidationException("Invalid salary range");
 
         JobPosting job = new JobPosting();
         job.setEmployerId(employerId);
@@ -47,7 +46,7 @@ public class JobPostingService {
         job.setCreatedAt(new Timestamp(System.currentTimeMillis()));
 
         boolean result = dao.addJob(job);
-        logger.info("Job posted result: " + result);
+        logger.info("Job posted result=" + result);
 
         return result;
     }

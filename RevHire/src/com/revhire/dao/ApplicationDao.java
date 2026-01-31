@@ -11,13 +11,15 @@ import com.revhire.util.DBConnection;
 
 public class ApplicationDao {
 
-    // ================= APPLY JOB =================
+	  // ================= APPLY JOB (SAFE & VALIDATED) =================
     public boolean applyJob(Application app) {
 
         String sql =
             "INSERT INTO APPLICATION " +
             "(APPLICATION_ID, JOB_ID, SEEKER_ID, RESUME_ID, COVER_LETTER, STATUS, APPLIED_AT) " +
-            "VALUES (APPLICATION_SEQ.NEXTVAL, ?, ?, ?, ?, ?, ?)";
+            "SELECT APPLICATION_SEQ.NEXTVAL, ?, ?, ?, ?, ?, ? " +
+            "FROM job_posting " +
+            "WHERE job_id = ? AND status = 'OPEN'";
 
         Connection con = null;
         PreparedStatement ps = null;
@@ -32,8 +34,11 @@ public class ApplicationDao {
             ps.setString(4, app.getCoverLetter());
             ps.setString(5, app.getStatus());
             ps.setTimestamp(6, app.getAppliedAt());
+            ps.setInt(7, app.getJobId());
 
-            return ps.executeUpdate() > 0;
+            int rows = ps.executeUpdate();
+
+            return rows > 0; // ✅ true only if job exists & OPEN
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -190,6 +195,70 @@ public class ApplicationDao {
         }
         return false;
     }
+    public String getApplicationStatus(int applicationId) {
+
+        String sql = "SELECT status FROM application WHERE application_id = ?";
+        Connection con = null;
+        PreparedStatement ps = null;
+        ResultSet rs = null;
+
+        try {
+            con = DBConnection.getConnection();
+            ps = con.prepareStatement(sql);
+            ps.setInt(1, applicationId);
+            rs = ps.executeQuery();
+
+            if (rs.next()) {
+                return rs.getString("status");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (rs != null) rs.close();
+                if (ps != null) ps.close();
+                if (con != null) con.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        return null; // application not found
+    }
+    
+ // ================= REOPEN APPLICATION =================
+    public boolean reopenApplication(int applicationId) {
+
+        String sql =
+            "UPDATE APPLICATION SET STATUS='REOPENED' WHERE APPLICATION_ID=?";
+
+        Connection con = null;
+        PreparedStatement ps = null;
+
+        try {
+            con = DBConnection.getConnection();
+            ps = con.prepareStatement(sql);
+            ps.setInt(1, applicationId);
+            return ps.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (ps != null) ps.close();
+                if (con != null) con.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
+    }
+
+
+
+
+
 
     
 }
